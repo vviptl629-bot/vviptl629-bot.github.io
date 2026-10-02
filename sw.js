@@ -1,4 +1,4 @@
-const CACHE = 'daily-review-v13';
+const CACHE = 'daily-review-v14';
 const FILES = [
   '/',
   '/index.html',
