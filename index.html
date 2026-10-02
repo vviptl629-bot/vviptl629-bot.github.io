@@ -247,12 +247,20 @@
 
     .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
     .tabs.mini { gap: 5px; margin-bottom: 12px; background: var(--bg); padding: 4px; border-radius: 12px; }
-    .tabs.mini .tab { padding: 7px 2px; font-size: 12px; border-radius: 9px; box-shadow: none; background: transparent; }
+    .tabs.mini .tab { padding: 7px 2px; font-size: 12px; border-radius: 9px; box-shadow: none; background: transparent; color: var(--text); }
     .tab {
       flex: 1; text-align: center; padding: 12px; border-radius: 14px;
       font-size: 14px; font-weight: 600; background: var(--card); color: var(--text-sub); cursor: pointer; box-shadow: var(--shadow);
     }
     .tab.active { background: var(--primary); color: #fff; }
+    /* 记录表筛选栏：选中色与上方「记一笔」类目标签一致（mini 的 background 优先级更高，需显式覆盖） */
+    .tabs.mini .tab.active { background: var(--primary); color: #fff; font-weight: 700; }
+    .tabs.mini .tab[data-filter="all"].active { background: #334155; }
+    .tabs.mini .tab[data-filter="life"].active { background: var(--life); }
+    .tabs.mini .tab[data-filter="trade"].active { background: var(--trade); }
+    .tabs.mini .tab[data-filter="study"].active { background: var(--study); }
+    .tabs.mini .tab[data-filter="idea"].active { background: var(--idea); }
+    .tabs.mini .tab[data-filter="summary"].active { background: var(--summary); }
 
     .empty { text-align: center; padding: 30px 20px; color: var(--text-sub); font-size: 14px; }
 
