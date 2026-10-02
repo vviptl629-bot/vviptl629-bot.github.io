@@ -504,7 +504,6 @@
       catch(e) { tombstones = {}; }
       pruneTombstones();
       entries = entries.filter(e => !isDeleted(e));
-      if (!entries.length) { seed(); }
     }
     function save() {
       localStorage.setItem(STORE_KEY, JSON.stringify(entries));
@@ -517,26 +516,6 @@
       const cut = Date.now() - TOMB_TTL, out = {};
       Object.keys(tombstones).forEach(k => { if (tombstones[k] > cut) out[k] = tombstones[k]; });
       tombstones = out;
-    }
-
-    function seed() {
-      const t = new Date();
-      const y = t.getFullYear(), m = t.getMonth();
-      const mk = d => `${y}-${pad(m+1)}-${pad(d)}`;
-      const samples = [
-        {date: mk(1), type:'life', what:'晨跑 3 公里，状态不错', good:'早起后先喝水再拉伸', bad:'早餐吃太晚', time:'07:20'},
-        {date: mk(1), type:'trade', what:'模拟盘做了一笔 EURUSD', good:'严格等信号才进', bad:'止损设太近被打掉', time:'21:10'},
-        {date: mk(3), type:'life', what:'陪儿子做数学作业', good:'用鼓励代替批评', bad:'自己先急躁了', time:'19:30'},
-        {date: mk(5), type:'trade', what:'复盘了上周 5 笔交易', good:'写出共性错误', bad:'还没形成清单', time:'22:00'},
-        {date: mk(8), type:'life', what:'整理书房', good:'断舍离一本旧书', bad:'中途刷手机', time:'15:00'},
-        {date: mk(12), type:'trade', what:'实盘小仓位试水', good:'只做计划内的', bad:'情绪单未完全避免', time:'20:45'},
-        {date: mk(15), type:'life', what:'读完一本书前两章', good:'地铁上阅读', bad:'晚上没坚持', time:'08:30'},
-        {date: mk(18), type:'trade', what:'看了 Al Brooks 第 4 章', good:'做笔记提炼', bad:'没实操演练', time:'23:00'},
-        {date: mk(18), type:'summary', what:'整体节奏比昨天稳，早上先把最要紧的事做掉，晚上留了半小时复盘。交易只做计划内的两笔，没被盘中波动带跑。唯一的遗憾是学习时间被杂事切碎了。', time:'23:20'},
-        {date: mk(20), type:'life', what:'带家人去公园', good:'放下手机', bad:'忘了带水', time:'16:00'}
-      ];
-      entries = samples.map((s, i) => ({id: Date.now()+i, updated: Date.now()+i*1000, ...s}));
-      save();
     }
 
     document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('zh-CN', {year:'numeric', month:'2-digit', day:'2-digit'}).replace(/\//g, '.');
