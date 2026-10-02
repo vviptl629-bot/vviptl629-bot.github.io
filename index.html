@@ -25,6 +25,7 @@
       --trade: #f59e0b;
       --study: #3b82f6;
       --idea: #8b5cf6;
+      --summary: #0d9488;
       --radius: 18px;
       --shadow: 0 2px 12px rgba(0,0,0,0.06);
     }
@@ -187,6 +188,7 @@
     .tag.trade.active { background: var(--trade); }
     .tag.study.active { background: var(--study); }
     .tag.idea.active { background: var(--idea); }
+    .tag.summary.active { background: var(--summary); }
 
     .btn-row { display: flex; gap: 12px; }
     .btn {
@@ -222,6 +224,10 @@
     .entry-type.trade { background: var(--trade); }
     .entry-type.study { background: var(--study); }
     .entry-type.idea { background: var(--idea); }
+    .entry-type.summary { background: var(--summary); }
+    .entry.summary { border-color: var(--summary); background: #f0fdfa; }
+    .entry.summary p { font-size: 15px; line-height: 1.65; margin-bottom: 0; }
+    .summary-box { min-height: 150px; font-size: 16px; line-height: 1.65; }
     .entry-time { font-size: 11px; color: var(--text-sub); }
     .entry-date { font-size: 11px; color: var(--text-sub); margin-right: 8px; }
     .entry-actions { display: flex; align-items: center; gap: 8px; }
@@ -320,20 +326,28 @@
 
     <div class="card">
       <div class="section-title">记一笔</div>
-      <div class="input-label">这一段做了什么</div>
-      <input type="text" id="what" placeholder="例如：完成了早餐、看了 PA 课程第 3 集">
+      <div id="normalFields">
+        <div class="input-label">这一段做了什么</div>
+        <input type="text" id="what" placeholder="例如：完成了早餐、看了 PA 课程第 3 集">
 
-      <div style="margin-top:12px" class="input-label">做对了什么</div>
-      <textarea id="good" placeholder="提炼一个可复用的正确动作"></textarea>
+        <div style="margin-top:12px" class="input-label">做对了什么</div>
+        <textarea id="good" placeholder="提炼一个可复用的正确动作"></textarea>
 
-      <div style="margin-top:12px" class="input-label">哪里可以更好</div>
-      <textarea id="bad" placeholder="记录失误、情绪或下次要避开的坑"></textarea>
+        <div style="margin-top:12px" class="input-label">哪里可以更好</div>
+        <textarea id="bad" placeholder="记录失误、情绪或下次要避开的坑"></textarea>
+      </div>
+
+      <div id="summaryField" style="display:none">
+        <div class="input-label">这一天，整体上</div>
+        <textarea id="summaryText" class="summary-box" placeholder="用一段话总结今天：整体做了什么、状态如何、最关键的收获或教训。可以一天写多条。"></textarea>
+      </div>
 
       <div class="tags">
         <div class="tag life active" data-type="life">生活</div>
         <div class="tag trade" data-type="trade">交易</div>
         <div class="tag study" data-type="study">学习</div>
         <div class="tag idea" data-type="idea">idea</div>
+        <div class="tag summary" data-type="summary">一日总结</div>
       </div>
 
       <div class="btn-row">
@@ -349,6 +363,7 @@
       <div class="stat"><div class="num" id="tradeCount">0</div><div class="label">交易</div></div>
       <div class="stat"><div class="num" id="studyCount">0</div><div class="label">学习</div></div>
       <div class="stat"><div class="num" id="ideaCount">0</div><div class="label">idea</div></div>
+      <div class="stat"><div class="num" id="summaryCount">0</div><div class="label">一日总结</div></div>
     </div>
 
     <div style="margin-top:14px" class="tabs">
@@ -357,6 +372,7 @@
       <div class="tab" data-filter="trade">交易</div>
       <div class="tab" data-filter="study">学习</div>
       <div class="tab" data-filter="idea">idea</div>
+      <div class="tab" data-filter="summary">总结</div>
     </div>
 
     <div class="card">
@@ -414,7 +430,8 @@
     let entries = [];
     let tombstones = {};              // {id: 删除时间戳} —— 让「删除」能跨设备传播
     let currentType = 'life';
-    const TYPE_LABEL = { life:'生活', trade:'交易', study:'学习', idea:'idea' };
+    const TYPE_LABEL = { life:'生活', trade:'交易', study:'学习', idea:'idea', summary:'一日总结' };
+    const SUMMARY = 'summary';
     let currentFilter = 'all';
     let selectedDate = null;
     let collapsedDates = new Set();
@@ -464,6 +481,7 @@
         {date: mk(12), type:'trade', what:'实盘小仓位试水', good:'只做计划内的', bad:'情绪单未完全避免', time:'20:45'},
         {date: mk(15), type:'life', what:'读完一本书前两章', good:'地铁上阅读', bad:'晚上没坚持', time:'08:30'},
         {date: mk(18), type:'trade', what:'看了 Al Brooks 第 4 章', good:'做笔记提炼', bad:'没实操演练', time:'23:00'},
+        {date: mk(18), type:'summary', what:'整体节奏比昨天稳，早上先把最要紧的事做掉，晚上留了半小时复盘。交易只做计划内的两笔，没被盘中波动带跑。唯一的遗憾是学习时间被杂事切碎了。', time:'23:20'},
         {date: mk(20), type:'life', what:'带家人去公园', good:'放下手机', bad:'忘了带水', time:'16:00'}
       ];
       entries = samples.map((s, i) => ({id: Date.now()+i, updated: Date.now()+i*1000, ...s}));
@@ -477,8 +495,22 @@
         document.querySelectorAll('.tag').forEach(x => x.classList.remove('active'));
         t.classList.add('active');
         currentType = t.dataset.type;
+        applyTypeUI();
       });
     });
+
+    // 「一日总结」只留一个大输入框；其余类目是三段字段
+    function applyTypeUI() {
+      const isSum = currentType === SUMMARY;
+      document.getElementById('normalFields').style.display = isSum ? 'none' : 'block';
+      document.getElementById('summaryField').style.display = isSum ? 'block' : 'none';
+      // 切类目时把已写内容带过去，避免白写
+      const w = document.getElementById('what'), s = document.getElementById('summaryText');
+      if (isSum && !s.value.trim() && w.value.trim()) s.value = w.value;
+      else if (!isSum && !w.value.trim() && s.value.trim()) w.value = s.value.split('\n')[0];
+      document.getElementById('saveBtn').textContent =
+        editingId ? '保存修改' : (isSum ? '+ 记录总结' : '+ 记录复盘');
+    }
 
     document.querySelectorAll('.tab').forEach(t => {
       t.addEventListener('click', () => {
@@ -505,12 +537,16 @@
       document.getElementById('what').value = '';
       document.getElementById('good').value = '';
       document.getElementById('bad').value = '';
+      document.getElementById('summaryText').value = '';
     }
 
     function addEntry() {
-      const what = document.getElementById('what').value.trim();
-      const good = document.getElementById('good').value.trim();
-      const bad = document.getElementById('bad').value.trim();
+      const isSum = currentType === SUMMARY;
+      const what = isSum
+        ? document.getElementById('summaryText').value.trim()
+        : document.getElementById('what').value.trim();
+      const good = isSum ? '' : document.getElementById('good').value.trim();
+      const bad = isSum ? '' : document.getElementById('bad').value.trim();
       if (!what && !good && !bad) return;
       const now = Date.now();
       if (editingId) {
@@ -536,11 +572,14 @@
 
     function enterEditMode(e) {
       editingId = e.id;
-      document.getElementById('what').value = e.what || '';
+      const isSum = e.type === SUMMARY;
+      document.getElementById('what').value = isSum ? '' : (e.what || '');
       document.getElementById('good').value = e.good || '';
       document.getElementById('bad').value = e.bad || '';
+      document.getElementById('summaryText').value = isSum ? (e.what || '') : '';
       document.querySelectorAll('.tag').forEach(x => x.classList.toggle('active', x.dataset.type === e.type));
       currentType = e.type;
+      applyTypeUI(e.type);
       document.getElementById('saveBtn').textContent = '保存修改';
       document.getElementById('cancelBtn').style.display = 'inline-block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -548,9 +587,9 @@
 
     function exitEditMode() {
       editingId = null;
-      document.getElementById('saveBtn').textContent = '+ 记录复盘';
       document.getElementById('cancelBtn').style.display = 'none';
       resetForm();
+      applyTypeUI(currentType);
     }
 
     function cancelEdit() { exitEditMode(); }
@@ -701,6 +740,7 @@
       document.getElementById('tradeCount').textContent = entries.filter(e => e.type === 'trade' && e.date === todayStr()).length;
       document.getElementById('studyCount').textContent = entries.filter(e => e.type === 'study' && e.date === todayStr()).length;
       document.getElementById('ideaCount').textContent = entries.filter(e => e.type === 'idea' && e.date === todayStr()).length;
+      document.getElementById('summaryCount').textContent = entries.filter(e => e.type === SUMMARY && e.date === todayStr()).length;
 
       const lt = document.getElementById('listTitle');
       lt.textContent = selectedDate ? `${selectedDate} 复盘` : '复盘记录表';
@@ -739,7 +779,7 @@
 
     function renderEntry(e) {
       return `
-        <div class="entry">
+        <div class="entry${e.type === SUMMARY ? ' summary' : ''}">
           <div class="entry-head">
             <span class="entry-type ${e.type}">${TYPE_LABEL[e.type] || e.type}</span>
             <span class="entry-actions">
