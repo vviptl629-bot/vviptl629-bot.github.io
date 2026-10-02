@@ -904,7 +904,11 @@
       if(el){ el.textContent=msg||''; el.className='sync-status'+(cls?' '+cls:''); }
       if(pill){ pill.textContent=msg?msg.replace(/^已同步 /,'同步 '):'同步 · 未启用'; pill.className='sync'+(cls?' '+cls:''); }
     }
-    function reviewPayload(){ sync.rev=(sync.rev||0)+1; return JSON.stringify({v:SYNC_VER,rev:sync.rev,baseRev:sync.lastRev||0,updatedAt:Date.now(),entries:entries,tombstones:tombstones}); }
+    function reviewPayload(){
+      // 保证版本号单调递增：如果本端落后于云端，先追上再 bump
+      sync.rev = Math.max(sync.rev||0, sync.lastRev||0) + 1;
+      return JSON.stringify({v:SYNC_VER,rev:sync.rev,baseRev:sync.lastRev||0,updatedAt:Date.now(),entries:entries,tombstones:tombstones});
+    }
     async function gistReq(method,id,body){
       const url=id?('https://api.github.com/gists/'+id):'https://api.github.com/gists';
       const opt={method:method,headers:{'Authorization':'Bearer '+sync.token,'Content-Type':'application/json','Accept':'application/vnd.github+json'}};
@@ -917,6 +921,7 @@
     }
     async function pushSync(){
       if(!sync.enabled||!sync.token)return;
+      clearTimeout(sync._t);   // 取消挂起的延迟推送，避免与手动同步重复上传
       try{
         const body=reviewPayload();
         if(!sync.gistId){
@@ -956,10 +961,8 @@
         const g=await gistReq('GET',sync.gistId);
         const f=g.files&&g.files[SYNC_FILE]; if(!f||!f.content)return;
         const d=JSON.parse(f.content);
-        if(d&&d.rev&&sync.lastRev&&d.rev>sync.lastRev&&sync.dirty){
-          const keepLocal=window.confirm('检测到其他设备也修改过数据（云端版本 '+d.rev+'，本端基于 '+sync.lastRev+'）。\n\n【确定】保留本端改动并覆盖云端\n【取消】放弃本端改动，改用云端数据');
-          if(keepLocal){ sync.lastRev=d.rev; sync.dirty=false; saveSyncCfg(); pushSync(); return; }
-        }
+        // 不再弹「版本冲突」：多设备并发编辑时，按条目做「最后写入者胜」自动合并，
+        // 既不会反复打断用户，也不会因弹窗被忽略而丢失对方数据。
         const before=JSON.stringify(entries)+JSON.stringify(tombstones);
         if(Array.isArray(d.entries)){ const m=mergeState(entries,tombstones,d); entries=m.entries; tombstones=m.tombstones; }
         const after=JSON.stringify(entries)+JSON.stringify(tombstones);
@@ -969,10 +972,12 @@
           const typing=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA');
           const modalOpen=document.querySelector('.modal-overlay.show');
           if(!typing&&!modalOpen){ render(); renderCalendar(); }
+          // 合并后若本端还有未上传改动，回传让两端尽快收敛（避免丢数据）
+          if(sync.dirty) schedulePush();
         }
         if(d&&d.rev){ sync.lastRev=d.rev; saveSyncCfg(); }
         sync._lastOk=Date.now();
-        if(!silent)syncStatus('已拉取 '+new Date().toLocaleTimeString(),'ok');
+        if(!silent)syncStatus('已同步云端 '+new Date().toLocaleTimeString(),'ok');
       }catch(e){
         if(/40[13]/.test(e&&e.message||'')){
           if(sync._retry){clearInterval(sync._retry);sync._retry=null;}
