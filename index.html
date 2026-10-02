@@ -8,9 +8,15 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Trader M">
-  <title>Trader M 每日复盘</title>
+  <title>Trader M　每日复盘</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="apple-touch-startup-image" href="/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/splash-1080x2340.png" media="(device-width: 360px) and (device-height: 780px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
   <style>
     :root {
       --primary: #0d9488;
@@ -54,6 +60,7 @@
       font-size: 22px; font-weight: 700;
     }
     .title h1 { margin: 0; font-size: 19px; font-weight: 700; }
+    .title h1 .tgap { display: inline-block; margin-left: 0.55em; }
     .title span { font-size: 11px; color: var(--text-sub); letter-spacing: 0.6px; }
     .sync {
       display: flex; align-items: center; gap: 6px;
@@ -228,6 +235,7 @@
     .entry.summary { border-color: var(--summary); background: #f0fdfa; }
     .entry.summary p { font-size: 15px; line-height: 1.65; margin-bottom: 0; }
     .summary-box { min-height: 150px; font-size: 16px; line-height: 1.65; }
+    .idea-box { min-height: 88px; font-size: 16px; line-height: 1.6; }
     .entry-time { font-size: 11px; color: var(--text-sub); }
     .entry-date { font-size: 11px; color: var(--text-sub); margin-right: 8px; }
     .entry-actions { display: flex; align-items: center; gap: 8px; }
@@ -239,6 +247,8 @@
     .entry .bad { color: #ef4444; font-size: 13px; }
 
     .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    .tabs.mini { gap: 5px; margin-bottom: 12px; background: var(--bg); padding: 4px; border-radius: 12px; }
+    .tabs.mini .tab { padding: 7px 2px; font-size: 12px; border-radius: 9px; box-shadow: none; background: transparent; }
     .tab {
       flex: 1; text-align: center; padding: 12px; border-radius: 14px;
       font-size: 14px; font-weight: 600; background: var(--card); color: var(--text-sub); cursor: pointer; box-shadow: var(--shadow);
@@ -315,7 +325,7 @@
       <div class="brand">
         <div class="date-box">M</div>
         <div class="title">
-          <h1>Trader M 每日复盘</h1>
+          <h1>Trader M<span class="tgap">每日复盘</span></h1>
           <span id="todayLabel">2026.10.02</span>
         </div>
       </div>
@@ -335,6 +345,11 @@
 
         <div style="margin-top:12px" class="input-label">哪里可以更好</div>
         <textarea id="bad" placeholder="记录失误、情绪或下次要避开的坑"></textarea>
+      </div>
+
+      <div id="ideaField" style="display:none">
+        <div class="input-label">点子 / 想法</div>
+        <textarea id="ideaText" class="idea-box" placeholder="记下突然冒出的点子、灵感或想法"></textarea>
       </div>
 
       <div id="summaryField" style="display:none">
@@ -366,17 +381,16 @@
       <div class="stat"><div class="num" id="summaryCount">0</div><div class="label">一日总结</div></div>
     </div>
 
-    <div style="margin-top:14px" class="tabs">
-      <div class="tab active" data-filter="all">全部</div>
-      <div class="tab" data-filter="life">生活</div>
-      <div class="tab" data-filter="trade">交易</div>
-      <div class="tab" data-filter="study">学习</div>
-      <div class="tab" data-filter="idea">idea</div>
-      <div class="tab" data-filter="summary">总结</div>
-    </div>
-
     <div class="card">
       <div class="section-title" id="listTitle">复盘记录表</div>
+      <div class="tabs mini">
+        <div class="tab active" data-filter="all">全部</div>
+        <div class="tab" data-filter="life">生活</div>
+        <div class="tab" data-filter="trade">交易</div>
+        <div class="tab" data-filter="study">学习</div>
+        <div class="tab" data-filter="idea">idea</div>
+        <div class="tab" data-filter="summary">总结</div>
+      </div>
       <div class="entry-list" id="entryList">
         <div class="empty">还没有记录，点上方的「+ 记录复盘」记第一条。</div>
       </div>
@@ -502,14 +516,24 @@
     // 「一日总结」只留一个大输入框；其余类目是三段字段
     function applyTypeUI() {
       const isSum = currentType === SUMMARY;
-      document.getElementById('normalFields').style.display = isSum ? 'none' : 'block';
+      const isIdea = currentType === 'idea';
+      document.getElementById('normalFields').style.display = (isSum || isIdea) ? 'none' : 'block';
+      document.getElementById('ideaField').style.display = isIdea ? 'block' : 'none';
       document.getElementById('summaryField').style.display = isSum ? 'block' : 'none';
       // 切类目时把已写内容带过去，避免白写
-      const w = document.getElementById('what'), s = document.getElementById('summaryText');
-      if (isSum && !s.value.trim() && w.value.trim()) s.value = w.value;
-      else if (!isSum && !w.value.trim() && s.value.trim()) w.value = s.value.split('\n')[0];
+      const w = document.getElementById('what');
+      const s = document.getElementById('summaryText');
+      const b = document.getElementById('ideaText');
+      const single = isSum ? s : (isIdea ? b : null);
+      if (single) {
+        const src = (w.value.trim() ? w.value : (isSum ? b.value : s.value));
+        if (!single.value.trim() && src.trim()) single.value = src;
+      } else if (!w.value.trim()) {
+        const prev = (s.value.trim() ? s.value : b.value);
+        if (prev.trim()) w.value = prev.split('\n')[0];
+      }
       document.getElementById('saveBtn').textContent =
-        editingId ? '保存修改' : (isSum ? '+ 记录总结' : '+ 记录复盘');
+        editingId ? '保存修改' : (isSum ? '+ 记录总结' : (isIdea ? '+ 记下点子' : '+ 记录复盘'));
     }
 
     document.querySelectorAll('.tab').forEach(t => {
@@ -538,15 +562,18 @@
       document.getElementById('good').value = '';
       document.getElementById('bad').value = '';
       document.getElementById('summaryText').value = '';
+      document.getElementById('ideaText').value = '';
     }
 
     function addEntry() {
       const isSum = currentType === SUMMARY;
+      const isIdea = currentType === 'idea';
       const what = isSum
         ? document.getElementById('summaryText').value.trim()
-        : document.getElementById('what').value.trim();
-      const good = isSum ? '' : document.getElementById('good').value.trim();
-      const bad = isSum ? '' : document.getElementById('bad').value.trim();
+        : (isIdea ? document.getElementById('ideaText').value.trim()
+                  : document.getElementById('what').value.trim());
+      const good = (isSum || isIdea) ? '' : document.getElementById('good').value.trim();
+      const bad = (isSum || isIdea) ? '' : document.getElementById('bad').value.trim();
       if (!what && !good && !bad) return;
       const now = Date.now();
       if (editingId) {
@@ -573,10 +600,12 @@
     function enterEditMode(e) {
       editingId = e.id;
       const isSum = e.type === SUMMARY;
-      document.getElementById('what').value = isSum ? '' : (e.what || '');
+      const isIdea = e.type === 'idea';
+      document.getElementById('what').value = (isSum || isIdea) ? '' : (e.what || '');
       document.getElementById('good').value = e.good || '';
       document.getElementById('bad').value = e.bad || '';
       document.getElementById('summaryText').value = isSum ? (e.what || '') : '';
+      document.getElementById('ideaText').value = isIdea ? (e.what || '') : '';
       document.querySelectorAll('.tag').forEach(x => x.classList.toggle('active', x.dataset.type === e.type));
       currentType = e.type;
       applyTypeUI(e.type);
@@ -854,7 +883,7 @@
       try{
         const body=reviewPayload();
         if(!sync.gistId){
-          const g=await gistReq('POST',null,{description:'Trader M 每日复盘 数据同步',public:false,files:{[SYNC_FILE]:{content:body}}});
+          const g=await gistReq('POST',null,{description:'Trader M　每日复盘 数据同步',public:false,files:{[SYNC_FILE]:{content:body}}});
           sync.gistId=g.id; saveSyncCfg();
         }else{
           await gistReq('PATCH',sync.gistId,{files:{[SYNC_FILE]:{content:body}}});
