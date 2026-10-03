@@ -239,6 +239,11 @@
     .entry p { margin: 0 0 6px 0; font-size: 14px; }
     .entry .good { color: var(--life); font-size: 13px; }
     .entry .bad { color: #ef4444; font-size: 13px; }
+    /* idea「已落实」标记（方案 A：每条 idea 右侧开关） */
+    .mini-btn.done-btn { color: var(--idea); border-color: #ddd6fe; }
+    .mini-btn.done-btn.on { color: #fff; background: var(--idea); border-color: var(--idea); }
+    .entry.idea.done { opacity: .6; }
+    .entry.idea.done .done-text { text-decoration: line-through; }
 
     .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
     .tabs.mini { gap: 5px; margin-bottom: 12px; background: var(--bg); padding: 4px; border-radius: 12px; }
@@ -590,6 +595,7 @@
         id: now,
         what, good, bad,
         type: currentType,
+        done: false,
         date: todayStr(),
         time: d.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'}),
         updated: now
@@ -814,21 +820,35 @@
     }
 
     function renderEntry(e) {
+      const isIdea = e.type === 'idea';
+      const done = isIdea && e.done;
       return `
-        <div class="entry${e.type === SUMMARY ? ' summary' : ''}">
+        <div class="entry${e.type === SUMMARY ? ' summary' : ''}${isIdea ? ' idea' : ''}${done ? ' done' : ''}">
           <div class="entry-head">
-            <span class="entry-type ${e.type}">${TYPE_LABEL[e.type] || e.type}</span>
+            <span class="entry-type ${e.type}">${TYPE_LABEL[e.type] || e.type}${done ? ' ✓' : ''}</span>
             <span class="entry-actions">
               <span class="entry-date">${e.date}</span>
               <span class="entry-time">${e.time}</span>
+              ${isIdea ? `<button class="mini-btn done-btn${done ? ' on' : ''}" onclick="toggleDone(${e.id})">${done ? '已落实' : '标记落实'}</button>` : ''}
               <button class="mini-btn" onclick="editEntry(${e.id})">编辑</button>
               <button class="mini-btn del" onclick="deleteEntry(${e.id})">删除</button>
             </span>
           </div>
-          ${e.what ? `<p>${escapeHtml(e.what)}</p>` : ''}
+          ${e.what ? `<p${done ? ' class="done-text"' : ''}>${escapeHtml(e.what)}</p>` : ''}
           ${e.good ? `<p class="good">√ ${escapeHtml(e.good)}</p>` : ''}
           ${e.bad ? `<p class="bad">× ${escapeHtml(e.bad)}</p>` : ''}
         </div>`;
+    }
+
+    // idea「已落实」：标记后随条目一起跨设备同步
+    function toggleDone(id) {
+      const e = entries.find(x => x.id === id);
+      if (!e || e.type !== 'idea') return;
+      e.done = !e.done;
+      e.updated = Date.now();
+      save();
+      render();
+      renderCalendar();
     }
 
     function escapeHtml(s) {
