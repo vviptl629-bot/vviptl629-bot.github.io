@@ -239,16 +239,17 @@
     .entry p { margin: 0 0 6px 0; font-size: 14px; }
     .entry .good { color: var(--life); font-size: 13px; }
     .entry .bad { color: #ef4444; font-size: 13px; }
-    /* idea「已落实」：落实按钮 + 折叠收纳区 */
+    /* idea「已落实」：落实按钮 + 收纳卡片（方案 A 青绿主题） */
     .mini-btn.act { color: var(--idea); border-color: #ddd6fe; }
     .entry.idea.done { opacity: .55; }
     .entry.idea.done .done-text { text-decoration: line-through; }
-    .done-zone { margin-top: 12px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: #fafafa; }
-    .done-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; cursor: pointer; user-select: none; background: #f1f5f9; }
-    .done-title { font-size: 14px; font-weight: 700; color: var(--idea); }
-    .done-count { font-size: 12px; color: #fff; background: var(--idea); border-radius: 999px; padding: 1px 8px; }
-    .done-arrow { margin-left: auto; font-size: 12px; color: var(--idea); }
-    .done-body { padding: 0 12px 12px 12px; }
+    .done-zone { margin-top: 14px; background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%); border: 1.5px solid #99f6e4; border-radius: 18px; box-shadow: 0 3px 14px rgba(13,148,136,0.08); overflow: hidden; }
+    .done-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; }
+    .done-icon { width: 34px; height: 34px; border-radius: 10px; background: #ccfbf1; color: #0d9488; display: flex; align-items: center; justify-content: center; font-size: 17px; flex: 0 0 auto; }
+    .done-title { font-size: 15px; font-weight: 700; color: #0f766e; }
+    .done-count { margin-left: auto; min-width: 26px; height: 26px; border-radius: 50%; background: #0d9488; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 7px; }
+    .done-arrow { margin-left: 6px; font-size: 13px; color: #0d9488; }
+    .done-body { padding: 0 14px 14px; }
     .done-body .entry { margin-top: 10px; }
 
     .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
@@ -430,6 +431,7 @@
       </div>
       <div class="done-zone" id="doneZone" style="display:none">
         <div class="done-head" id="doneHead">
+          <span class="done-icon">✓</span>
           <span class="done-title">已落实</span>
           <span class="done-count" id="doneCount">0</span>
           <span class="done-arrow" id="doneArrow">▸</span>
