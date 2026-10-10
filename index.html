@@ -32,6 +32,7 @@
       --study: #3b82f6;
       --idea: #8b5cf6;
       --summary: #0d9488;
+      --think: #ef4444;
       --radius: 18px;
       --shadow: 0 2px 12px rgba(15,23,42,0.06);
     }
@@ -195,6 +196,7 @@
     .tag.study.active { background: var(--study); }
     .tag.idea.active { background: var(--idea); }
     .tag.summary.active { background: var(--summary); }
+    .tag.think.active { background: var(--think); }
 
     .btn-row { display: flex; gap: 12px; }
     .btn {
@@ -226,10 +228,15 @@
     .entry-type.study { background: var(--study); }
     .entry-type.idea { background: var(--idea); }
     .entry-type.summary { background: var(--summary); }
+    .entry-type.think { background: var(--think); }
     .entry.summary { border-color: var(--summary); background: #f0fdfa; }
     .entry.summary p { font-size: 15px; line-height: 1.65; margin-bottom: 0; }
     .summary-box { min-height: 150px; font-size: 16px; line-height: 1.65; }
     .idea-box { min-height: 88px; font-size: 16px; line-height: 1.6; }
+    .entry.think { border-color: var(--think); background: #fef2f2; }
+    .entry.think p { font-size: 15px; line-height: 1.65; margin-bottom: 0; }
+    .think-box { min-height: 150px; font-size: 16px; line-height: 1.65; border-color: #fecaca; }
+    .think-box:focus { border-color: var(--think); background: #fff; }
     .entry-time { font-size: 11px; color: var(--text-sub); }
     .entry-date { font-size: 11px; color: var(--text-sub); margin-right: 8px; }
     .entry-actions { display: flex; align-items: center; gap: 8px; }
@@ -268,6 +275,7 @@
     .tabs.mini .tab[data-filter="study"].active { background: var(--study); }
     .tabs.mini .tab[data-filter="idea"].active { background: var(--idea); }
     .tabs.mini .tab[data-filter="summary"].active { background: var(--summary); }
+    .tabs.mini .tab[data-filter="think"].active { background: var(--think); }
     /* 角标：默认隐藏，仅选中态右上角浮出条数；白底青绿字、柔影、无黑 */
     .tabs.mini .tab .badge { display: none; position: absolute; top: -6px; right: 1px; min-width: 15px; height: 15px; border-radius: 8px; background: #fff; color: var(--primary); font-size: 9px; font-weight: 700; align-items: center; justify-content: center; padding: 0 3px; box-shadow: 0 1px 3px rgba(15,23,42,0.18); z-index: 2; }
     .tabs.mini .tab.active .badge { display: flex; }
@@ -396,6 +404,11 @@
         <textarea id="ideaText" class="idea-box" placeholder="记下突然冒出的点子、灵感或想法"></textarea>
       </div>
 
+      <div id="thinkField" style="display:none">
+        <div class="input-label">思考 / 感悟</div>
+        <textarea id="thinkText" class="think-box" placeholder="记录一段思考、推演或感悟：触发是什么、怎么想的、得出了什么结论。空间已留足，放心写。"></textarea>
+      </div>
+
       <div id="summaryField" style="display:none">
         <div class="input-label">这一天，整体上</div>
         <textarea id="summaryText" class="summary-box" placeholder="用一段话总结今天：整体做了什么、状态如何、最关键的收获或教训。可以一天写多条。"></textarea>
@@ -406,6 +419,7 @@
         <div class="tag trade" data-type="trade">交易</div>
         <div class="tag study" data-type="study">学习</div>
         <div class="tag idea" data-type="idea">idea</div>
+        <div class="tag think" data-type="think">思考</div>
         <div class="tag summary" data-type="summary">一日总结</div>
       </div>
 
@@ -424,6 +438,7 @@
         <div class="tab" data-filter="trade">交易<span class="badge">0</span></div>
         <div class="tab" data-filter="study">学习<span class="badge">0</span></div>
         <div class="tab" data-filter="idea">idea<span class="badge">0</span></div>
+        <div class="tab" data-filter="think">思考<span class="badge">0</span></div>
         <div class="tab" data-filter="summary">总结<span class="badge">0</span></div>
       </div>
       <div class="entry-list" id="entryList">
@@ -488,7 +503,7 @@
     let entries = [];
     let tombstones = {};              // {id: 删除时间戳} —— 让「删除」能跨设备传播
     let currentType = 'life';
-    const TYPE_LABEL = { life:'生活', trade:'交易', study:'学习', idea:'idea', summary:'一日总结' };
+    const TYPE_LABEL = { life:'生活', trade:'交易', study:'学习', idea:'idea', think:'思考', summary:'一日总结' };
     const SUMMARY = 'summary';
     let currentFilter = 'all';
     let selectedDate = null;
@@ -537,27 +552,30 @@
       });
     });
 
-    // 「一日总结」只留一个大输入框；其余类目是三段字段
+    // 「一日总结 / idea / 思考」只留一个大输入框；其余类目是三段字段
     function applyTypeUI() {
       const isSum = currentType === SUMMARY;
       const isIdea = currentType === 'idea';
-      document.getElementById('normalFields').style.display = (isSum || isIdea) ? 'none' : 'block';
+      const isThink = currentType === 'think';
+      document.getElementById('normalFields').style.display = (isSum || isIdea || isThink) ? 'none' : 'block';
       document.getElementById('ideaField').style.display = isIdea ? 'block' : 'none';
       document.getElementById('summaryField').style.display = isSum ? 'block' : 'none';
+      document.getElementById('thinkField').style.display = isThink ? 'block' : 'none';
       // 切类目时把已写内容带过去，避免白写
       const w = document.getElementById('what');
       const s = document.getElementById('summaryText');
       const b = document.getElementById('ideaText');
-      const single = isSum ? s : (isIdea ? b : null);
-      if (single) {
-        const src = (w.value.trim() ? w.value : (isSum ? b.value : s.value));
-        if (!single.value.trim() && src.trim()) single.value = src;
+      const k = document.getElementById('thinkText');
+      const singleEl = isSum ? s : (isIdea ? b : (isThink ? k : null));
+      if (singleEl) {
+        const src = (w.value.trim() ? w.value : (b.value.trim() ? b.value : (s.value.trim() ? s.value : k.value)));
+        if (!singleEl.value.trim() && src.trim()) singleEl.value = src;
       } else if (!w.value.trim()) {
-        const prev = (s.value.trim() ? s.value : b.value);
+        const prev = (s.value.trim() ? s.value : (b.value.trim() ? b.value : k.value));
         if (prev.trim()) w.value = prev.split('\n')[0];
       }
       document.getElementById('saveBtn').textContent =
-        editingId ? '保存修改' : (isSum ? '+ 记录总结' : (isIdea ? '+ 记下点子' : '+ 记录复盘'));
+        editingId ? '保存修改' : (isSum ? '+ 记录总结' : (isIdea ? '+ 记下点子' : (isThink ? '+ 记录思考' : '+ 记录复盘')));
     }
 
     document.querySelectorAll('.tab').forEach(t => {
@@ -590,17 +608,20 @@
       document.getElementById('bad').value = '';
       document.getElementById('summaryText').value = '';
       document.getElementById('ideaText').value = '';
+      document.getElementById('thinkText').value = '';
     }
 
     function addEntry() {
       const isSum = currentType === SUMMARY;
       const isIdea = currentType === 'idea';
+      const isThink = currentType === 'think';
       const what = isSum
         ? document.getElementById('summaryText').value.trim()
         : (isIdea ? document.getElementById('ideaText').value.trim()
-                  : document.getElementById('what').value.trim());
-      const good = (isSum || isIdea) ? '' : document.getElementById('good').value.trim();
-      const bad = (isSum || isIdea) ? '' : document.getElementById('bad').value.trim();
+                  : (isThink ? document.getElementById('thinkText').value.trim()
+                             : document.getElementById('what').value.trim()));
+      const good = (isSum || isIdea || isThink) ? '' : document.getElementById('good').value.trim();
+      const bad = (isSum || isIdea || isThink) ? '' : document.getElementById('bad').value.trim();
       if (!what && !good && !bad) return;
       const now = Date.now();
       if (editingId) {
@@ -629,11 +650,13 @@
       editingId = e.id;
       const isSum = e.type === SUMMARY;
       const isIdea = e.type === 'idea';
-      document.getElementById('what').value = (isSum || isIdea) ? '' : (e.what || '');
+      const isThink = e.type === 'think';
+      document.getElementById('what').value = (isSum || isIdea || isThink) ? '' : (e.what || '');
       document.getElementById('good').value = e.good || '';
       document.getElementById('bad').value = e.bad || '';
       document.getElementById('summaryText').value = isSum ? (e.what || '') : '';
       document.getElementById('ideaText').value = isIdea ? (e.what || '') : '';
+      document.getElementById('thinkText').value = isThink ? (e.what || '') : '';
       document.querySelectorAll('.tag').forEach(x => x.classList.toggle('active', x.dataset.type === e.type));
       currentType = e.type;
       applyTypeUI(e.type);
@@ -788,7 +811,7 @@
     function updateFilterBadges(){
       const base = selectedDate ? entries.filter(e => e.date === selectedDate) : entries;
       const active = base.filter(e => !(e.type === 'idea' && e.done));  // 已落实不计入主列表角标
-      const counts = { all: active.length, life: 0, trade: 0, study: 0, idea: 0, summary: 0 };
+      const counts = { all: active.length, life: 0, trade: 0, study: 0, idea: 0, think: 0, summary: 0 };
       active.forEach(e => { if (counts[e.type] !== undefined) counts[e.type]++; });
       document.querySelectorAll('.tabs.mini .tab').forEach(t => {
         const b = t.querySelector('.badge');
